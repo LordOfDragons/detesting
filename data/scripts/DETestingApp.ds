@@ -1,0 +1,139 @@
+/* 
+ * Drag[en]gine Testing
+ *
+ * Copyright (C) 2020, Roland Plüss (roland@rptd.ch)
+ * 
+ * This program is free software; you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License 
+ * as published by the Free Software Foundation; either 
+ * version 2 of the License, or (at your option) any later 
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+namespace DETesting
+
+pin Dragengine.Gui.Layouts
+pin Dragengine.Gui.Events
+pin Dragengine.LoadSave
+pin Dragengine.Scenery
+pin Dragengine.Utils
+
+
+/**
+ * Drag[en]gine Testing.
+ */
+class DETestingApp extends Game
+	private var Console console
+	private var Loaders loaders
+	private var Desktop desktop
+	private var WindowTesting windowTesting
+	private var InputProcessor inputProcessor
+	
+	private static var DETestingApp app = null
+	
+	
+	
+	/** Create Application. */
+	public func new()
+	end
+	
+	
+	
+	/** Init application. */
+	public func void initGame()
+		app = this
+		
+		InputSystem.setCaptureInputDevices(false)
+		
+		console = Console.new(50)
+		console.addListener(LogConsoleMessages.new())
+		
+		loaders = Loaders.new(console)
+		
+		desktop = Desktop.new(GraphicSystem.getWindowSize())
+		desktop.setGuiTheme(loaders.getGuiTheme().loadFromFile(\
+			"/shareddata/guithemes/modern/modern.guitheme.xml"))
+		GraphicSystem.getPrimaryCanvas().addCanvas(desktop.getCanvasWidget())
+		
+		windowTesting = WindowTesting.new(desktop)
+		
+		inputProcessor = WidgetInputProcessor.new(desktop)
+	end
+	
+	/** Overrides Game.cleanUp() */
+	public func void cleanUp()
+		if windowTesting != null
+			windowTesting.close()
+			windowTesting = null
+		end
+		
+		if desktop != null
+			GraphicSystem.getPrimaryCanvas().removeCanvas(desktop.getCanvasWidget())
+			desktop.dispose()
+			desktop = null
+		end
+		
+		inputProcessor = null
+		
+		app = null
+	end
+	
+	/** Process input event. */
+	public func void inputEvent(InputEvent event)
+		inputProcessor.inputEvent(event)
+	end
+	
+	/** User requested window to be closed. */
+	public func void userRequestedQuit()
+		Engine.quit()
+	end
+	
+	/** Frame update. */
+	public func void onFrameUpdate()
+		TimerManager.advanceDefault(Engine.getElapsedTime())
+		FrameUpdateManager.notifyAllDefault()
+	end
+	
+	/** Render window size changed. */
+	public func void onResizeRenderWindow()
+		desktop.setSize(GraphicSystem.getWindowSize())
+	end
+	
+	
+	
+	/** The one and only application object */
+	public static func DETestingApp getApp()
+		return app
+	end
+	
+	
+	
+	/** Console object. */
+	public func Console getConsole()
+		return console
+	end
+	
+	/** Loaders. */
+	public func Loaders getLoaders()
+		return loaders
+	end
+	
+	/** Desktop widget. */
+	public func Desktop getDesktop()
+		return desktop
+	end
+	
+	/** Testing window. */
+	public func WindowTesting getWindowTesting()
+		return windowTesting
+	end
+end

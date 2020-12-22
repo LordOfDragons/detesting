@@ -1,0 +1,188 @@
+/* 
+ * Drag[en]gine Testing
+ *
+ * Copyright (C) 2020, Roland Plüss (roland@rptd.ch)
+ * 
+ * This program is free software; you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License 
+ * as published by the Free Software Foundation; either 
+ * version 2 of the License, or (at your option) any later 
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+namespace DETesting
+
+pin Dragengine.Gui.Layouts
+pin Dragengine.Gui.Events
+pin Dragengine.LoadSave
+pin Dragengine.Scenery
+pin Dragengine.TestSystem
+pin Dragengine.Utils
+
+
+/**
+ * Drag[en]gine Testing Window.
+ */
+class WindowTesting extends Window
+	/** Test runner listener updating window representation. */
+	class UpdateUIListener extends DefaultTestRunnerListener
+		private var WindowTesting window
+		
+		public func new(WindowTesting window)
+			this.window = window
+		end
+	end
+	
+	/** Test runner listener logging to console. */
+	class LogConsoleListener extends DefaultTestRunnerListener
+		private var Console console
+		
+		public func new(Console console)
+			this.console = console
+		end
+		
+		public func void runnerStarted(TestRunner testRunner)
+			console.addMessage("Start running tests")
+		end
+		
+		public func void runnerFinished(TestRunner testRunner)
+			var int countTests = testRunner.getTestSuiteCount()
+			var int countFailed = testRunner.failedTestSuites().getCount()
+			console.addMessage("Finished running tests: {} suites PASSED, {} suites FAILED".format(\
+				Array.newWith(countTests - countFailed, countFailed)))
+		end
+		
+		public func void testSuiteStarted(TestRunner testRunner, TestSuite testSuite)
+			console.addMessage("Start testing test suite: {} ({})".format(\
+				Array.newWith(testSuite.getName(), testSuite.getID())))
+		end
+		
+		public func void testSuiteFinished(TestRunner testRunner, TestSuite testSuite)
+			var int countTests = testSuite.getTestCaseCount()
+			var int countFailed = testSuite.failedTestCases().getCount()
+			console.addMessage("Finished testing test suite: {} ({}): {} cases PASSED, {} cases FAILED".format(\
+				Array.newWith(testSuite.getName(), testSuite.getID(), countTests - countFailed, countFailed)))
+		end
+		
+		public func void testCaseStarted(TestRunner testRunner, TestSuite testSuite, TestCase testCase)
+			console.addMessage("Start testing test case: {} ({})".format(\
+				Array.newWith(testCase.getName(), testCase.getID())))
+		end
+		
+		public func void testCaseFinished(TestRunner testRunner, TestSuite testSuite, TestCase testCase)
+			if testCase.getState() == TestCase.State.passed
+				console.addMessage("Finished testing test case: {} ({}): PASSED".format(\
+					Array.newWith(testCase.getName(), testCase.getID())))
+				
+			else
+				console.addMessage("Finished testing test case: {} ({}): FAILED".format(\
+					Array.newWith(testCase.getName(), testCase.getID())))
+				if testCase.getException() != null
+					console.addError(" => ", testCase.getException())
+				end
+			end
+		end
+	end
+	
+	/** Start running tests action. */
+	class StartTesting implements ActionListener
+		private var WindowTesting window
+		
+		public func new(WindowTesting window)
+			this.window = window
+		end
+		
+		public func void onAction(ActionEvent event)
+			window.startTesting()
+		end
+	end
+	
+	
+	
+	private var TestRunner testRunner
+	private var TestGameApp testGameApp
+	
+	
+	
+	/** Create window. */
+	public func new(Desktop desktop)
+		testGameApp = TestGameApp.new()
+		testGameApp.initGame()
+		
+		createContent()
+		desktop.addWindow(this)
+		
+		testRunner = TestRunner.new()
+		testRunner.addListener(LogConsoleListener.new(DETestingApp.getApp().getConsole()))
+		testRunner.addListener(UpdateUIListener.new(this))
+		
+		addTestSuites()
+	end
+	
+	/** Dispose of window. */
+	public func void dispose()
+		super.dispose()
+		
+		if testRunner != null
+			testRunner.dispose()
+			testRunner = null
+		end
+		
+		if testGameApp != null
+			testGameApp.cleanUp()
+			testGameApp = null
+		end
+	end
+	
+	
+	
+	/** Game application for use by test suited. */
+	public func TestGameApp getTestGameApp()
+		return testGameApp
+	end
+	
+	
+	
+	/** Start testing. */
+	public func void startTesting()
+		if not testRunner.getRunning()
+			testRunner.start()
+		end
+	end
+	
+	
+	
+	/**
+	 * Create window content.
+	 */
+	protected func void createContent()
+		runWhileBlockingLayout(block
+			setDesignerSelector("WindowFullScreen")
+			setVisible(true)
+			setWindowState(Window.WindowState.maximized)
+			
+			setLayout(BoxLayout.new(LayoutAxis.x))
+			
+			addWidget(Button.new("Start", StartTesting.new(this)))
+			
+			addWidget(Button.new("Quit", BlockActionListener.new(block ActionEvent event
+				Engine.quit()
+			end)))
+		end)
+		doLayout()
+	end
+	
+	/** Add test suites. */
+	protected func void addTestSuites()
+		testRunner.addTestSuite(TSECBComponent.new())
+	end
+end
