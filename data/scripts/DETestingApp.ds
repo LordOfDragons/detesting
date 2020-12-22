@@ -60,8 +60,7 @@ class DETestingApp extends Game
 		loaders = Loaders.new(console)
 		
 		desktop = Desktop.new(GraphicSystem.getWindowSize())
-		desktop.setGuiTheme(loaders.getGuiTheme().loadFromFile(\
-			"/shareddata/guithemes/modern/modern.guitheme.xml"))
+		desktop.setGuiTheme(loaders.getGuiTheme().loadFromFile("/content/ui/main.guitheme.xml"))
 		GraphicSystem.getPrimaryCanvas().addCanvas(desktop.getCanvasWidget())
 		
 		windowTesting = WindowTesting.new(desktop)

@@ -13,7 +13,8 @@
 		<gameDescription>Drag[en]gine Testing</gameDescription>
 		<creator/>
 		<website/>
-		<windowSize x='1200' y='800'/>
+		<icon>/content/image/icon64.png</icon>
+		<windowSize x='800' y='400'/>
 		<delgaPath>distribute/DETesting.delga</delgaPath>
 	</profile>
 </project>
