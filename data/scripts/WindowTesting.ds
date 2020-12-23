@@ -266,7 +266,7 @@ class WindowTesting extends Window
 	end
 	
 	/** Start running tests action. */
-	class StartTesting implements ActionListener
+	class StartTestingAll implements ActionListener
 		private var WindowTesting window
 		
 		public func new(WindowTesting window)
@@ -274,7 +274,23 @@ class WindowTesting extends Window
 		end
 		
 		public func void onAction(ActionEvent event)
-			window.startTesting()
+			window.startTesting(null)
+		end
+	end
+	
+	/** Start running tests action. */
+	class StartTestingSelected implements ActionListener
+		private var WindowTesting window
+		
+		public func new(WindowTesting window)
+			this.window = window
+		end
+		
+		public func void onAction(ActionEvent event)
+			var TestSuite suite = window.getSelectedTestSuite()
+			if suite != null
+				window.startTesting(Array.newWith(suite))
+			end
 		end
 	end
 	
@@ -299,7 +315,8 @@ class WindowTesting extends Window
 	private var DefaultListModel modelTestCases
 	private var DefaultTextModel modelLogs
 	private var ScrollPanel scrollPanelLogs
-	private var Button buttonStart
+	private var Button buttonRunAll
+	private var Button buttonRunSelected
 	private var Button buttonStop
 	
 	
@@ -317,7 +334,6 @@ class WindowTesting extends Window
 		testRunner.addListener(UpdateUIListener.new(this))
 		
 		addTestSuites()
-		updateModelTestSuites()
 		updateButtonStates()
 	end
 	
@@ -338,7 +354,8 @@ class WindowTesting extends Window
 		modelTestCases = null
 		modelLogs = null
 		scrollPanelLogs = null
-		buttonStart = null
+		buttonRunAll = null
+		buttonRunSelected = null
 		buttonStop = null
 	end
 	
@@ -351,11 +368,27 @@ class WindowTesting extends Window
 	
 	
 	
-	/** Start testing. */
-	public func void startTesting()
-		if not testRunner.getRunning()
-			testRunner.start()
+	/** Start testing. If  suites is null test all suites. */
+	public func void startTesting(Array testSuites)
+		if testRunner.getRunning()
+			return
 		end
+		
+		modelLogs.setText("")
+		
+		testRunner.removeAllTestSuites()
+		if testSuites != null
+			testSuites.forEach(block TestSuite each
+				testRunner.addTestSuite(each)
+			end)
+			
+		else
+			modelTestSuites.forEach(block TestSuite each
+				testRunner.addTestSuite(each)
+			end)
+		end
+		
+		testRunner.start()
 	end
 	
 	/** Stop testing. */
@@ -408,8 +441,9 @@ class WindowTesting extends Window
 			end), BorderLayout.Area.content)
 			
 			// button panel at the bottom
-			addWidget(Panel.new(BoxLayout.new(LayoutAxis.x), block Panel p
-				p.addWidget(buttonStart = Button.new("Start", StartTesting.new(this)))
+			addWidget(Panel.new(GridLayout.new(0, 1, 5), block Panel p
+				p.addWidget(buttonRunAll = Button.new("Run All", StartTestingAll.new(this)))
+				p.addWidget(buttonRunSelected = Button.new("Run Selected", StartTestingSelected.new(this)))
 				p.addWidget(buttonStop = Button.new("Stop", StopTesting.new(this)))
 				p.addWidget(Button.new("Quit", BlockActionListener.new(block ActionEvent event
 					Engine.quit()
@@ -421,22 +455,17 @@ class WindowTesting extends Window
 	
 	/** Update button states. */
 	public func void updateButtonStates()
-		buttonStart.setEnabled(not testRunner.getRunning())
+		buttonRunAll.setEnabled(not testRunner.getRunning())
+		buttonRunSelected.setEnabled(not testRunner.getRunning())
 		buttonStop.setEnabled(testRunner.getRunning())
 	end
 	
 	/** Add test suites. */
 	protected func void addTestSuites()
-		testRunner.addTestSuite(TSECBComponent.new())
-	end
-	
-	/** Update test suite model. */
-	public func void updateModelTestSuites()
-		var Array elements = Array.new()
-		testRunner.forEachTestSuite(block TestSuite each
-			elements.add(each)
-		end)
-		modelTestSuites.setContent(elements)
+		var Array content = Array.new()
+		content.add(TSECBComponent.new())
+		
+		modelTestSuites.setContent(content)
 	end
 	
 	/** Selected test suite or null. */
