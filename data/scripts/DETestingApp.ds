@@ -37,6 +37,7 @@ class DETestingApp extends BaseGameAppTesting
 	protected func void addTestSuites()
 		var WindowTesting window = getWindowTesting()
 		
+		window.addTestSuite(TSBBehaviorElement.new())
 		window.addTestSuite(TSECBComponent.new())
 	end
 end
